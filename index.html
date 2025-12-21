@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>九九乘法口诀消消乐</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>九九乘法口诀消消乐</h1>
+            <div class="score-board">
+                <div class="score-item">
+                    <span class="label">积分：</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="label">进度：</span>
+                    <span id="combo">0/0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-info">
+            <p>规则：选择三个连续的数字（横、竖或L型），如果它们能组成一句乘法口诀（a×b=c，其中a和b是1-9，c是积），即可标记。找到所有符合条件的组合即可获胜！</p>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+        
+        <div class="controls">
+            <button id="resetBtn" class="btn">重新开始</button>
+            <button id="hintBtn" class="btn">提示</button>
+        </div>
+        
+        <div id="message" class="message"></div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
+

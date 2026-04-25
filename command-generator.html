@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>jynew · 控制台命令生成</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-panel: #0e0c0a;
+    --bg-inset: #080706;
+    --gold: #d4a84a;
+    --gold-bright: #e8c547;
+    --gold-dim: #8a7344;
+    --border-outer: #2a2218;
+    --border-gold: #4a3d28;
+    --text: #e8e4dc;
+    --text-muted: #7d7360;
+    --accent-hot: #c9a23a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", "Hiragino Sans GB", sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 100% 80% at 50% 0%, rgba(212, 168, 74, 0.07), transparent 50%),
+      linear-gradient(180deg, #0c0a08 0%, var(--bg) 32%);
+    color: var(--text);
+    line-height: 1.45;
+  }
+  .trainer-frame {
+    max-width: 900px;
+    margin: 1rem auto 1.5rem;
+    border: 1px solid var(--border-outer);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.5),
+      0 4px 0 rgba(0,0,0,0.25),
+      0 20px 50px rgba(0,0,0,0.7),
+      inset 0 1px 0 rgba(255, 210, 120, 0.06);
+    background: linear-gradient(165deg, #12100e 0%, #0b0908 100%);
+  }
+  .trainer-titlebar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.55rem 1rem 0.6rem;
+    background: linear-gradient(180deg, #1a1510 0%, #0f0d0a 100%);
+    border-bottom: 1px solid var(--border-gold);
+    box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.1);
+  }
+  .trainer-titlebar h1 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.12em;
+    color: var(--gold-bright);
+    text-shadow: 0 0 24px rgba(232, 197, 71, 0.45), 0 1px 0 #1a1008;
+  }
+  .trainer-badge {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--border-gold);
+    background: var(--bg-inset);
+  }
+  .trainer-banner {
+    padding: 0.9rem 1.1rem 0.5rem;
+    border-bottom: 1px solid #1f1a12;
+  }
+  .trainer-banner p {
+    margin: 0.4rem 0 0;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  main { padding: 0.75rem 1rem 1.1rem; }
+  section {
+    position: relative;
+    background: var(--bg-panel);
+    border: 1px solid #1a1610;
+    border-radius: 2px;
+    padding: 0.8rem 1rem 0.85rem;
+    margin-bottom: 0.7rem;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.45);
+  }
+  section::before {
+    content: "";
+    position: absolute; left: 0; right: 0; top: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), var(--gold), var(--gold-dim), transparent);
+    opacity: 0.5;
+  }
+  section h2 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin: 0 0 0.6rem;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(212, 168, 74, 0.25);
+  }
+  label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 0.6rem 0.9rem; align-items: flex-end; }
+  .field { margin-bottom: 0.35rem; }
+  select, input[type="number"], input[type="text"] {
+    width: 100%;
+    min-width: 0;
+    padding: 0.4rem 0.45rem;
+    border-radius: 1px;
+    border: 1px solid #2a2118;
+    background: #060504;
+    color: var(--text);
+    font-size: 0.88rem;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent-hot);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5), 0 0 0 1px rgba(201, 162, 58, 0.35);
+  }
+  .w-sm { max-width: 5rem; }
+  .w-md { max-width: 10rem; }
+  .w-lg { max-width: 20rem; flex: 1; }
+  button {
+    cursor: pointer;
+    border: 1px solid var(--border-gold);
+    background: linear-gradient(180deg, #2a2118 0%, #1a140e 100%);
+    color: var(--gold-bright);
+    padding: 0.45rem 0.9rem;
+    font-size: 0.86rem;
+    text-shadow: 0 0 8px rgba(212, 168, 74, 0.3);
+    box-shadow: 0 1px 0 rgba(255, 220, 150, 0.12);
+  }
+  button:hover {
+    background: linear-gradient(180deg, #3a3020 0%, #201a10 100%);
+  }
+  button.primary {
+    background: linear-gradient(180deg, #3d2f18 0%, #2a1f0e 100%);
+    border-color: #6b5a2e;
+    color: #f0e0a0;
+  }
+  button.primary:hover { filter: brightness(1.1); }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.5rem; }
+  textarea {
+    width: 100%;
+    min-height: 9.5rem;
+    font-family: Consolas, "Source Han Sans SC", "Microsoft YaHei", monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding: 0.6rem 0.7rem;
+    border-radius: 1px;
+    border: 1px solid #2a2118;
+    background: #050403;
+    color: #c4ba9e;
+    resize: vertical;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+  }
+  .hint { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.45rem; }
+  .tag {
+    display: inline-block;
+    padding: 0.08rem 0.35rem;
+    font-size: 0.7rem;
+    color: #b9a07a;
+    background: #12100c;
+    border: 1px solid #2f2618;
+  }
+  .combo { position: relative; width: 100%; }
+  .combo input.combo-input { width: 100%; }
+  .combo-panel {
+    position: absolute; left: 0; right: 0; top: calc(100% + 2px);
+    z-index: 30;
+    max-height: 14rem; overflow-y: auto;
+    margin: 0; padding: 0.2rem 0; list-style: none;
+    background: #0a0806;
+    border: 1px solid var(--border-gold);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.6), 0 0 0 1px rgba(212, 168, 74, 0.12);
+  }
+  .combo-panel[hidden] { display: none !important; }
+  .combo-panel li { padding: 0.4rem 0.55rem; cursor: pointer; font-size: 0.86rem; color: #c8c2b6; }
+  .combo-panel li:hover, .combo-panel li.active { background: #1a150f; color: var(--gold-bright); }
+  .opt-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+    align-items: center;
+  }
+  .cmd-groups { display: grid; gap: 0.55rem; }
+  .cmd-group {
+    border: 1px solid #241d12;
+    background: #0b0907;
+    padding: 0.45rem 0.55rem;
+  }
+  .cmd-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: #b79b63;
+    margin-bottom: 0.35rem;
+  }
+  .cmd-check-grid label { min-width: 17rem; }
+  .cmd-check-grid input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 0.9rem;
+    height: 0.9rem;
+    border: 1px solid #4a3d28;
+    border-radius: 50%;
+    background: #080706;
+    margin: 0;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .cmd-check-grid input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    background: var(--gold-bright);
+    box-shadow: 0 0 8px rgba(232, 197, 71, 0.45);
+  }
+  .opt-grid label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    cursor: pointer;
+    color: #b8a990;
+    font-size: 0.82rem;
+  }
+  .opt-grid input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 0.9rem; height: 0.9rem;
+    border: 1px solid #4a3d28;
+    background: #080706;
+    border-radius: 1px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .opt-grid input[type="checkbox"]:hover { border-color: var(--gold-dim); }
+  .opt-grid input[type="checkbox"]:checked {
+    background: linear-gradient(180deg, #3a2a12 0%, #2a1e0c 100%);
+    border-color: #8a6f30;
+  }
+  .opt-grid input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute; left: 1px; top: -2px;
+    font-size: 0.75rem; color: var(--gold-bright);
+  }
+  .trainer-footer {
+    padding: 0.45rem 1rem;
+    font-size: 0.7rem;
+    color: #5c5344;
+    text-align: center;
+    border-top: 1px solid #1a1510;
+    background: #080705;
+  }
+  code { color: #c9a85c; font-size: 0.9em; }
+  strong { color: #e0c88a; }
+  @media (max-width: 600px) {
+    .row { flex-direction: column; align-items: stretch; }
+    .trainer-frame { margin: 0; border-left: 0; border-right: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="trainer-frame">
+  <div class="trainer-titlebar">
+    <h1>jynew · 控制台命令</h1>
+    <span class="trainer-badge" title="本页为调试便利工具，非游戏内置修改器">JYX2 数据 | 单页版</span>
+  </div>
+  <div class="trainer-banner">
+    <p>数据来自 <span class="tag">JYX2</span> 配置表 <code>人物 / 武功 / 物品</code>。游戏中按 <strong>`</strong> 打开 Lua 控制台粘贴生成结果；扩展 <code>item</code>、<code>set_attack</code> 等见 Wiki「2.2 控制台」。</p>
+  </div>
+<main>
+  <section>
+    <h2>目标角色</h2>
+    <div class="row">
+      <div class="field w-lg">
+        <label for="qPeople">选择人物</label>
+        <div class="combo" id="wrapPeople">
+          <input type="text" id="qPeople" class="combo-input" placeholder="可输入名称或代号筛选，空格多关键词" spellcheck="false" autocomplete="off" />
+          <ul class="combo-panel" id="panelPeople" role="listbox" hidden></ul>
+        </div>
+      </div>
+      <div class="field w-sm">
+        <label for="roleId">或手动代号</label>
+        <input type="number" id="roleId" value="0" step="1" />
+      </div>
+    </div>
+    <p class="hint">在框内输入可模糊筛选，选中后同步「手动代号」；也可只改数字代号，失焦后输入框会恢复为对应条目。</p>
+  </section>
+
+  <section>
+    <h2>常用属性（Lua 指令）</h2>
+    <div class="row">
+      <div class="field w-sm">
+        <label>银两 <span class="tag">AddItem(银两, n)</span></label>
+        <input type="number" class="w-sm" id="vMoney" value="1000" min="0" step="1" title="MONEY 道具 ID" />
+      </div>
+      <div class="field w-sm">
+        <label>经验 <span class="tag">AddExp</span></label>
+        <input type="number" class="w-sm" id="vExp" value="1000" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label>攻击力 <span class="tag">AddAttack</span></label>
+        <input type="number" class="w-sm" id="vAttack" value="10" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label>轻功 <span class="tag">AddSpeed</span></label>
+        <input type="number" class="w-sm" id="vSpeed" value="0" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label>内力 <span class="tag">AddMp</span></label>
+        <input type="number" class="w-sm" id="vMp" value="0" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label>生命 <span class="tag">AddHp</span></label>
+        <input type="number" class="w-sm" id="vHp" value="0" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label>资质 <span class="tag">AddAptitude</span></label>
+        <input type="number" class="w-sm" id="vApt" value="0" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label>道德 <span class="tag">AddEthics</span></label>
+        <input type="number" class="w-sm" id="vEth" value="0" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label>声望 <span class="tag">AddRepute</span></label>
+        <input type="number" class="w-sm" id="vRep" value="0" step="1" />
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>物品</h2>
+    <div class="row">
+      <div class="field w-lg" style="flex:2; min-width:200px">
+        <label for="qItem">选择道具</label>
+        <div class="combo" id="wrapItem">
+          <input type="text" id="qItem" class="combo-input" placeholder="可输入名称或 ID 筛选" spellcheck="false" autocomplete="off" />
+          <ul class="combo-panel" id="panelItem" role="listbox" hidden></ul>
+        </div>
+      </div>
+      <div class="field w-sm">
+        <label for="itemId">或道具 ID</label>
+        <input type="number" id="itemId" value="3" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label for="itemCnt">数量</label>
+        <input type="number" id="itemCnt" value="1" step="1" />
+      </div>
+    </div>
+    <p class="hint">银两 = 配置项 <code>MONEY_ID</code>，JYX2 为 <strong id="moneyHint">174</strong>；道具表第一列为代号。</p>
+  </section>
+
+  <section>
+    <h2>武功</h2>
+    <div class="row">
+      <div class="field w-lg" style="flex:2; min-width:200px">
+        <label for="qSkill">选择武功</label>
+        <div class="combo" id="wrapSkill">
+          <input type="text" id="qSkill" class="combo-input" placeholder="可输入武功名或 ID 筛选" spellcheck="false" autocomplete="off" />
+          <ul class="combo-panel" id="panelSkill" role="listbox" hidden></ul>
+        </div>
+      </div>
+      <div class="field w-sm">
+        <label for="wugongId">或武功 ID</label>
+        <input type="number" id="wugongId" value="1" min="0" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label for="slot">武功槽位 (0 起)</label>
+        <input type="number" id="slot" value="0" min="0" max="99" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label for="lv">等级 1–10</label>
+        <input type="number" id="lv" value="10" min="1" max="10" step="1" />
+      </div>
+      <div class="field w-sm">
+        <label for="learnShow">学会时提示 0/1</label>
+        <input type="number" id="learnShow" value="1" min="0" max="1" step="1" />
+      </div>
+    </div>
+    <p class="hint"><code>SetOneMagic</code> 等级：Wiki 为 0=1 级、900=10 级。本页按 (等级−1)×100 计算。</p>
+  </section>
+
+  <section>
+    <h2>扩展控制台（只作用于主角的简写，见 Wiki）</h2>
+    <div class="row">
+      <div class="field w-sm">
+        <label for="setAtk">set_attack 攻击力</label>
+        <input type="number" id="setAtk" value="100" min="0" step="1" />
+      </div>
+    </div>
+    <p class="hint">游戏中另一套指令：<code>item 道具id 数量</code> 与上表银两/道具一致。本页在生成时可勾选是否附带。</p>
+  </section>
+
+  <section>
+    <h2>命令类型（可多选）</h2>
+    <div class="cmd-groups">
+      <div class="cmd-group">
+        <div class="cmd-title">基础属性</div>
+        <div class="opt-grid cmd-check-grid">
+          <label><input type="checkbox" class="cmdType" value="money" checked /> 加银两（AddItem）</label>
+          <label><input type="checkbox" class="cmdType" value="exp" /> 加经验（AddExp）</label>
+          <label><input type="checkbox" class="cmdType" value="attack" /> 加攻击力（AddAttack）</label>
+          <label><input type="checkbox" class="cmdType" value="speed" /> 加轻功（AddSpeed）</label>
+          <label><input type="checkbox" class="cmdType" value="mp" /> 加内力（AddMp）</label>
+          <label><input type="checkbox" class="cmdType" value="hp" /> 加生命（AddHp）</label>
+          <label><input type="checkbox" class="cmdType" value="apt" /> 加资质（AddAptitude）</label>
+          <label><input type="checkbox" class="cmdType" value="eth" /> 加道德（AddEthics）</label>
+          <label><input type="checkbox" class="cmdType" value="rep" /> 加声望（AddRepute）</label>
+        </div>
+      </div>
+      <div class="cmd-group">
+        <div class="cmd-title">道具与武功</div>
+        <div class="opt-grid cmd-check-grid">
+          <label><input type="checkbox" class="cmdType" value="item" /> 道具（AddItem，带提示）</label>
+          <label><input type="checkbox" class="cmdType" value="itemNH" /> 道具（AddItemWithoutHint）</label>
+          <label><input type="checkbox" class="cmdType" value="learn" /> 学会武功（LearnMagic2）</label>
+          <label><input type="checkbox" class="cmdType" value="setM" /> 设置武功等级（SetOneMagic）</label>
+        </div>
+      </div>
+      <div class="cmd-group">
+        <div class="cmd-title">扩展控制台</div>
+        <div class="opt-grid cmd-check-grid">
+          <label><input type="checkbox" class="cmdType" value="setAtk" /> set_attack（仅主角）</label>
+          <label><input type="checkbox" class="cmdType" value="itemCmd" /> item（扩展道具命令）</label>
+        </div>
+      </div>
+    </div>
+    <p class="hint">可同时勾选多个命令，一次生成多条。</p>
+    <div class="actions">
+      <button type="button" class="primary" id="btnGen">生成选中命令</button>
+      <button type="button" id="btnCopy">复制结果</button>
+      <button type="button" id="btnClear">清空输出</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>输出</h2>
+    <textarea id="out" readonly placeholder="点击「一键生成」…"></textarea>
+  </section>
+</main>
+  <div class="trainer-footer">本地网页 · 不联网 · 与游戏无进程关联</div>
+</div>
+<script>
+(function () {
+  const B64 = "eyJwZW9wbGUiOlt7ImlkIjowLCJuYW1lIjoi5bCP6Jm+57GzIn0seyJpZCI6MSwibmFtZSI6IuiDoeaWkCJ9LHsiaWQiOjIsIm5hbWUiOiLnqIvngbXntKAifSx7ImlkIjozLCJuYW1lIjoi6IuX5Lq65YekIn0seyJpZCI6NCwibmFtZSI6IumYjuWfuiJ9LHsiaWQiOjUsIm5hbWUiOiLlvKDkuInkuLAifSx7ImlkIjo2LCJuYW1lIjoi54Gt57udIn0seyJpZCI6NywibmFtZSI6IuS9leWkquWGsiJ9LHsiaWQiOjgsIm5hbWUiOiLllJDmlofkuq4ifSx7ImlkIjo5LCJuYW1lIjoi5byg5peg5b+MIn0seyJpZCI6MTAsIm5hbWUiOiLojIPpgaUifSx7ImlkIjoxMSwibmFtZSI6IuadqOmAjSJ9LHsiaWQiOjEyLCJuYW1lIjoi5q635aSp5q2jIn0seyJpZCI6MTMsIm5hbWUiOiLosKLpgIoifSx7ImlkIjoxNCwibmFtZSI6IumfpuS4gOeskSJ9LHsiaWQiOjE1LCJuYW1lIjoi6YeR6Iqx5amG5amGIn0seyJpZCI6MTYsIm5hbWUiOiLog6HpnZLniZsifSx7ImlkIjoxNywibmFtZSI6IueOi+mavuWnkSJ9LHsiaWQiOjE4LCJuYW1lIjoi5oiQ5piGIn0seyJpZCI6MTksIm5hbWUiOiLlsrPkuI3nvqQifSx7ImlkIjoyMCwibmFtZSI6IuiOq+WkpyJ9LHsiaWQiOjIxLCJuYW1lIjoi5a6a6ZeyIn0seyJpZCI6MjIsIm5hbWUiOiLlt6blhrfnpoUifSx7ImlkIjoyMywibmFtZSI6IuWkqemXqCJ9LHsiaWQiOjI0LCJuYW1lIjoi5L2Z5rKn5rW3In0seyJpZCI6MjUsIm5hbWUiOiLok53lh6Tlh7AifSx7ImlkIjoyNiwibmFtZSI6IuS7u+aIkeihjCJ9LHsiaWQiOjI3LCJuYW1lIjoi5Lic5pa55LiN6LSlIn0seyJpZCI6MjgsIm5hbWUiOiLlubPkuIDmjIcifSx7ImlkIjoyOSwibmFtZSI6IueUsOS8r+WFiSJ9LHsiaWQiOjMwLCJuYW1lIjoi6aOO5riF5omsIn0seyJpZCI6MzEsIm5hbWUiOiLkuLnpnZLnlJ8ifSx7ImlkIjozMiwibmFtZSI6Iueng+eslOe/gSJ9LHsiaWQiOjMzLCJuYW1lIjoi6buR55m95a2QIn0seyJpZCI6MzQsIm5hbWUiOiLpu4Tpkp/lhawifSx7ImlkIjozNSwibmFtZSI6IuS7pOeLkOWGsiJ9LHsiaWQiOjM2LCJuYW1lIjoi5p6X5bmz5LmLIn0seyJpZCI6MzcsIm5hbWUiOiLni4TkupEifSx7ImlkIjozOCwibmFtZSI6Iuefs+egtOWkqSJ9LHsiaWQiOjM5LCJuYW1lIjoi6b6Z5bKb5Li7In0seyJpZCI6NDAsIm5hbWUiOiLmnKjlspvkuLsifSx7ImlkIjo0MSwibmFtZSI6IuW8oOS4iSJ9LHsiaWQiOjQyLCJuYW1lIjoi5p2O5ZubIn0seyJpZCI6NDMsIm5hbWUiOiLnmb3kuIfliZEifSx7ImlkIjo0NCwibmFtZSI6IuWys+iAgeS4iSJ9LHsiaWQiOjQ1LCJuYW1lIjoi6Jab5oWV5Y2OIn0seyJpZCI6NDYsIm5hbWUiOiLkuIHmmKXnp4sifSx7ImlkIjo0NywibmFtZSI6IumYv+e0qyJ9LHsiaWQiOjQ4LCJuYW1lIjoi5ri45Z2m5LmLIn0seyJpZCI6NDksIm5hbWUiOiLomZrnq7kifSx7ImlkIjo1MCwibmFtZSI6IuS5lOWzsCJ9LHsiaWQiOjUxLCJuYW1lIjoi5oWV5a655aSNIn0seyJpZCI6NTIsIm5hbWUiOiLoi4/mmJ/msrMifSx7ImlkIjo1MywibmFtZSI6IuauteiqiSJ9LHsiaWQiOjU0LCJuYW1lIjoi6KKB5om/5b+XIn0seyJpZCI6NTUsIm5hbWUiOiLpg63pnZYifSx7ImlkIjo1NiwibmFtZSI6Ium7hOiTiSJ9LHsiaWQiOjU3LCJuYW1lIjoi6buE6I2v5biIIn0seyJpZCI6NTgsIm5hbWUiOiLmnajov4cifSx7ImlkIjo1OSwibmFtZSI6IuWwj+m+meWlsyJ9LHsiaWQiOjYwLCJuYW1lIjoi5qyn6Ziz6ZSLIn0seyJpZCI6NjEsIm5hbWUiOiLmrKfpmLPlhYsifSx7ImlkIjo2MiwibmFtZSI6IumHkei9ruazleeOiyJ9LHsiaWQiOjYzLCJuYW1lIjoi56iL6IuxIn0seyJpZCI6NjQsIm5hbWUiOiLlkajkvK/pgJoifSx7ImlkIjo2NSwibmFtZSI6IuS4gOeBryJ9LHsiaWQiOjY2LCJuYW1lIjoi55Gb5aeRIn0seyJpZCI6NjcsIm5hbWUiOiLoo5jljYPku54ifSx7ImlkIjo2OCwibmFtZSI6IuS4mOWkhOacuiJ9LHsiaWQiOjY5LCJuYW1lIjoi5rSq5LiD5YWsIn0seyJpZCI6NzAsIm5hbWUiOiLnjoTmhYgifSx7ImlkIjo3MSwibmFtZSI6Iua0quaVmeS4uyJ9LHsiaWQiOjcyLCJuYW1lIjoi5a2U5YWr5ouJIn0seyJpZCI6NzMsIm5hbWUiOiLljZfotKQifSx7ImlkIjo3NCwibmFtZSI6IuWMl+S4kSJ9LHsiaWQiOjc1LCJuYW1lIjoi5Y6o5biIIn0seyJpZCI6NzYsIm5hbWUiOiLnjovor63lq6MifSx7ImlkIjo3NywibmFtZSI6IuW3qOifkiJ9LHsiaWQiOjc4LCJuYW1lIjoi6I6954mv5pyx6JukIn0seyJpZCI6NzksIm5hbWUiOiLljqjluIgifSx7ImlkIjo4MCwibmFtZSI6IuWOqOW4iCJ9LHsiaWQiOjgxLCJuYW1lIjoi5bCR5p6X5byf5a2QIn0seyJpZCI6ODIsIm5hbWUiOiLlsJHmnpflvJ/lrZAifSx7ImlkIjo4MywibmFtZSI6IuWwkeael+W8n+WtkCJ9LHsiaWQiOjg0LCJuYW1lIjoi5bCR5p6X5byf5a2QIn0seyJpZCI6ODUsIm5hbWUiOiLlsJHmnpflvJ/lrZAifSx7ImlkIjo4NiwibmFtZSI6IuWwkeael+W8n+WtkCJ9LHsiaWQiOjg3LCJuYW1lIjoi5bCR5p6X5byf5a2QIn0seyJpZCI6ODgsIm5hbWUiOiLlsJHmnpflvJ/lrZAifSx7ImlkIjo4OSwibmFtZSI6IuWwkeael+W8n+WtkCJ9LHsiaWQiOjkwLCJuYW1lIjoi5bCR5p6X5byf5a2QIn0seyJpZCI6OTEsIm5hbWUiOiLmmIbku5HlvJ/lrZAifSx7ImlkIjo5MiwibmFtZSI6IuaYhuS7keW8n+WtkCJ9LHsiaWQiOjkzLCJuYW1lIjoi5piG5LuR5byf5a2QIn0seyJpZCI6OTQsIm5hbWUiOiLmmIbku5HlvJ/lrZAifSx7ImlkIjo5NSwibmFtZSI6IuaYhuS7keW8n+WtkCJ9LHsiaWQiOjk2LCJuYW1lIjoi5piG5LuR5byf5a2QIn0seyJpZCI6OTcsIm5hbWUiOiLmmIbku5HlvJ/lrZAifSx7ImlkIjo5OCwibmFtZSI6IuaYhuS7keW8n+WtkCJ9LHsiaWQiOjk5LCJuYW1lIjoi5piG5LuR5byf5a2QIn0seyJpZCI6MTAwLCJuYW1lIjoi5piG5LuR5byf5a2QIn0seyJpZCI6MTAxLCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTAyLCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTAzLCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTA0LCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTA1LCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTA2LCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTA3LCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTA4LCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTA5LCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTEwLCJuYW1lIjoi56We6b6Z5pWZ5b6SIn0seyJpZCI6MTExLCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTEyLCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTEzLCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTE0LCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTE1LCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTE2LCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTE3LCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTE4LCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTE5LCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTIwLCJuYW1lIjoi5aSn6Zuq5oCqIn0seyJpZCI6MTIxLCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTIyLCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTIzLCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTI0LCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTI1LCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTI2LCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTI3LCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTI4LCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTI5LCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTMwLCJuYW1lIjoi5aSn6JyY6JubIn0seyJpZCI6MTMxLCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTMyLCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTMzLCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTM0LCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTM1LCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTM2LCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTM3LCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTM4LCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTM5LCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTQwLCJuYW1lIjoi5q2m5b2T5byf5a2QIn0seyJpZCI6MTQxLCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQyLCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQzLCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQ0LCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQ1LCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQ2LCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQ3LCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQ4LCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTQ5LCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTUwLCJuYW1lIjoi5bOo5bWL5byf5a2QIn0seyJpZCI6MTUxLCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTUyLCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTUzLCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTU0LCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTU1LCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTU2LCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTU3LCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTU4LCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTU5LCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTYwLCJuYW1lIjoi5bSG5bOS5byf5a2QIn0seyJpZCI6MTYxLCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTYyLCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTYzLCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTY0LCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTY1LCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTY2LCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTY3LCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTY4LCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTY5LCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTcwLCJuYW1lIjoi5Y2O5bGx5byf5a2QIn0seyJpZCI6MTcxLCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTcyLCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTczLCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTc0LCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTc1LCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTc2LCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTc3LCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTc4LCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTc5LCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTgwLCJuYW1lIjoi6KGh5bGx5byf5a2QIn0seyJpZCI6MTgxLCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTgyLCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTgzLCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTg0LCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTg1LCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTg2LCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTg3LCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTg4LCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTg5LCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTkwLCJuYW1lIjoi5oGS5bGx5byf5a2QIn0seyJpZCI6MTkxLCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTkyLCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTkzLCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTk0LCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTk1LCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTk2LCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTk3LCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTk4LCJuYW1lIjoi5bWp5bGx5byf5a2QIn0seyJpZCI6MTk5LCJuYW1lIjoi5bWp5bGx5byf5a2QIn1dLCJza2lsbHMiOlt7ImlkIjowLCJuYW1lIjoi5pmu6YCa5pS75Ye7In0seyJpZCI6MSwibmFtZSI6IumHjueQg+aLsyJ9LHsiaWQiOjIsIm5hbWUiOiLmrablvZPplb/mi7MifSx7ImlkIjozLCJuYW1lIjoi572X5rGJ5ouzIn0seyJpZCI6NCwibmFtZSI6IueBteibh+aLsyJ9LHsiaWQiOjUsIm5hbWUiOiLnpZ7njovmr5LmjowifSx7ImlkIjo2LCJuYW1lIjoi5LiD5Lyk5ouzIn0seyJpZCI6NywibmFtZSI6Iua3t+WFg+aOjCJ9LHsiaWQiOjgsIm5hbWUiOiLlr5LlhrDnu7XmjowifSx7ImlkIjo5LCJuYW1lIjoi6bmw54iq5YqfIn0seyJpZCI6MTAsIm5hbWUiOiLpgI3pgaXmjowifSx7ImlkIjoxMSwibmFtZSI6IumTgeaOjCJ9LHsiaWQiOjEyLCJuYW1lIjoi5bm76Zi05oyHIn0seyJpZCI6MTMsIm5hbWUiOiLlr5LlhrDnpZ7mjowifSx7ImlkIjoxNCwibmFtZSI6IuWNg+aJi+WmguadpeaOjCJ9LHsiaWQiOjE1LCJuYW1lIjoi5aSp5bGx5YWt6Ziz5o6MIn0seyJpZCI6MTYsIm5hbWUiOiLnjoTlhqXnpZ7mjowifSx7ImlkIjoxNywibmFtZSI6IuWGsOialeavkuaOjCJ9LHsiaWQiOjE4LCJuYW1lIjoi6b6Z6LGh6Iis6Iul5YqfIn0seyJpZCI6MTksIm5hbWUiOiLkuIDpmLPmjIcifSx7ImlkIjoyMCwibmFtZSI6IuWkquaegeaLsyJ9LHsiaWQiOjIxLCJuYW1lIjoi56m65piO5ouzIn0seyJpZCI6MjIsIm5hbWUiOiLom6Ton4blip8ifSx7ImlkIjoyMywibmFtZSI6IuWkqueOhOelnuWKnyJ9LHsiaWQiOjI0LCJuYW1lIjoi6buv54S26ZSA6a2C5o6MIn0seyJpZCI6MjUsIm5hbWUiOiLpmY3pvpnljYHlhavmjowifSx7ImlkIjoyNiwibmFtZSI6IuiRteiKseelnuWKnyJ9LHsiaWQiOjI3LCJuYW1lIjoi5YyW5Yqf5aSn5rOVIn0seyJpZCI6MjgsIm5hbWUiOiLlkLjmmJ/lpKfms5UifSx7ImlkIjoyOSwibmFtZSI6IuWMl+WGpeelnuWKnyJ9LHsiaWQiOjMwLCJuYW1lIjoi5YWt6ISJ56We5YmRIn0seyJpZCI6MzEsIm5hbWUiOiLourrlsLjliZHms5UifSx7ImlkIjozMiwibmFtZSI6IumdkuWfjuWJkeazlSJ9LHsiaWQiOjMzLCJuYW1lIjoi5Yaw6Zuq5YmR5rOVIn0seyJpZCI6MzQsIm5hbWUiOiLmgZLlsbHliZHms5UifSx7ImlkIjozNSwibmFtZSI6IuazsOWxseWJkeazlSJ9LHsiaWQiOjM2LCJuYW1lIjoi6KGh5bGx5YmR5rOVIn0seyJpZCI6MzcsIm5hbWUiOiLljY7lsbHliZHms5UifSx7ImlkIjozOCwibmFtZSI6IuW1qeWxseWJkeazlSJ9LHsiaWQiOjM5LCJuYW1lIjoi5YWo55yf5YmR5rOVIn0seyJpZCI6NDAsIm5hbWUiOiLls6jltYvliZHms5UifSx7ImlkIjo0MSwibmFtZSI6IuatpuW9k+WJkeazlSJ9LHsiaWQiOjQyLCJuYW1lIjoi5LiH6Iqx5YmR5rOVIn0seyJpZCI6NDMsIm5hbWUiOiLms7zloqjliZHms5UifSx7ImlkIjo0NCwibmFtZSI6IumbquWxseWJkeazlSJ9LHsiaWQiOjQ1LCJuYW1lIjoi5rOw5bGx5Y2B5YWr55uYIn0seyJpZCI6NDYsIm5hbWUiOiLlm57ls7DokL3pm4HliZEifSx7ImlkIjo0NywibmFtZSI6IuS4pOS7quWJkeazlSJ9LHsiaWQiOjQ4LCJuYW1lIjoi5aSq5bKz5LiJ6Z2S5bOwIn0seyJpZCI6NDksIm5hbWUiOiLnjonlpbPntKDlv4PliZEifSx7ImlkIjo1MCwibmFtZSI6IumAjemBpeWJkeazlSJ9LHsiaWQiOjUxLCJuYW1lIjoi5oWV5a655YmR5rOVIn0seyJpZCI6NTIsIm5hbWUiOiLlgJrlpKnliZHms5UifSx7ImlkIjo1MywibmFtZSI6IuS4g+aYn+WJkeazlSJ9LHsiaWQiOjU0LCJuYW1lIjoi6YeR6JuH5YmR5rOVIn0seyJpZCI6NTUsIm5hbWUiOiLoi5flrrbliZHms5UifSx7ImlkIjo1NiwibmFtZSI6IueOieeuq+WJkeazlSJ9LHsiaWQiOjU3LCJuYW1lIjoi546E6ZOB5YmR5rOVIn0seyJpZCI6NTgsIm5hbWUiOiLlpKrmnoHliZHms5UifSx7ImlkIjo1OSwibmFtZSI6Iui+vuaRqeWJkeazlSJ9LHsiaWQiOjYwLCJuYW1lIjoi6L6f6YKq5YmR5rOVIn0seyJpZCI6NjEsIm5hbWUiOiLni6zlraTkuZ3liZEifSx7ImlkIjo2MiwibmFtZSI6Iuilv+eTnOWIgOazlSJ9LHsiaWQiOjYzLCJuYW1lIjoi6KGA5YiA5aSn5rOVIn0seyJpZCI6NjQsIm5hbWUiOiLni4Lpo47liIDms5UifSx7ImlkIjo2NSwibmFtZSI6IuWPjeS4pOS7quWIgOazlSJ9LHsiaWQiOjY2LCJuYW1lIjoi54Gr54Sw5YiA5rOVIn0seyJpZCI6NjcsIm5hbWUiOiLog6HlrrbliIDms5UifSx7ImlkIjo2OCwibmFtZSI6Iumcuembs+WIgOazlSJ9LHsiaWQiOjY5LCJuYW1lIjoi56We6b6Z5Y+M5Yu+In0seyJpZCI6NzAsIm5hbWUiOiLlpKfova7mnZbms5UifSx7ImlkIjo3MSwibmFtZSI6IuaAquW8guatpuWZqCJ9LHsiaWQiOjcyLCJuYW1lIjoi54K85b+D5by5In0seyJpZCI6NzMsIm5hbWUiOiLlj6vljJbmo43ms5UifSx7ImlkIjo3NCwibmFtZSI6IueBq+eEsOWPkeWwhOWZqCJ9LHsiaWQiOjc1LCJuYW1lIjoi6bOE6bG8In0seyJpZCI6NzYsIm5hbWUiOiLlpKfonJjnj6AifSx7ImlkIjo3NywibmFtZSI6Iuavkum+memereazlSJ9LHsiaWQiOjc4LCJuYW1lIjoi6buE5rKZ5LiH6YeM6Z6tIn0seyJpZCI6NzksIm5hbWUiOiLpm6rmgKoifSx7ImlkIjo4MCwibmFtZSI6IuWIpOWumOeslCJ9LHsiaWQiOjgxLCJuYW1lIjoi5oyB5qOL55uYIn0seyJpZCI6ODIsIm5hbWUiOiLlpKfliarliIAifSx7ImlkIjo4MywibmFtZSI6IuaMgeeRtueQtCJ9LHsiaWQiOjg0LCJuYW1lIjoi5aSn6J+S6JuHIn0seyJpZCI6ODUsIm5hbWUiOiLph5HoirHmnZbms5UifSx7ImlkIjo4NiwibmFtZSI6Iuelnum+mem5v+adliJ9LHsiaWQiOjg3LCJuYW1lIjoi5omT54uX5qON5rOVIn0seyJpZCI6ODgsIm5hbWUiOiLkupTova7lpKfms5UifSx7ImlkIjo4OSwibmFtZSI6IuadvumjjuWJkeazlSJ9LHsiaWQiOjkwLCJuYW1lIjoi5pmu6YCa5pS75Ye7In0seyJpZCI6OTEsIm5hbWUiOiLni67lrZDlkLwifSx7ImlkIjo5MiwibmFtZSI6IuS5nemYs+elnuWKnyJ9LHsiaWQiOjkzLCJuYW1lIjoi55So5q+SIn0seyJpZCI6OTQsIm5hbWUiOiLop6Pmr5IifSx7ImlkIjo5NSwibmFtZSI6IuWMu+eWlyJ9LHsiaWQiOjk2LCJuYW1lIjoi6I6954mv5pyx6JukIn0seyJpZCI6OTcsIm5hbWUiOiLmmpflmagifV0sIml0ZW1zIjpbeyJpZCI6MCwibmFtZSI6IuW6t+WAjeeJuSJ9LHsiaWQiOjEsIm5hbWUiOiLnsr7msJTkuLgifSx7ImlkIjoyLCJuYW1lIjoi55m95bKa5rCP6bih57K+In0seyJpZCI6MywibmFtZSI6IuWwj+i/mOS4uSJ9LHsiaWQiOjQsIm5hbWUiOiLnjonmtJ7pu5Hnn7PkuLkifSx7ImlkIjo1LCJuYW1lIjoi546J55yf5pWjIn0seyJpZCI6NiwibmFtZSI6IuS4iem7hOWuneiFiuS4uSJ9LHsiaWQiOjcsIm5hbWUiOiLnjonngbXmlaMifSx7ImlkIjo4LCJuYW1lIjoi5aSp6aaZ5pat57ut6IO2In0seyJpZCI6OSwibmFtZSI6Ium7keeOieaWree7reiGjyJ9LHsiaWQiOjEwLCJuYW1lIjoi6YeR54mb6L+Q5Yqf5pWjIn0seyJpZCI6MTEsIm5hbWUiOiLkurrlj4IifSx7ImlkIjoxMiwibmFtZSI6IueZveS6keeGiuiDhuS4uCJ9LHsiaWQiOjEzLCJuYW1lIjoi5Lmd6Iqx546J6Zyy5Li4In0seyJpZCI6MTQsIm5hbWUiOiLkuZ3ovazngbXlrp3kuLgifSx7ImlkIjoxNSwibmFtZSI6IueUsOS4g+myqOiDhuaVoyJ9LHsiaWQiOjE2LCJuYW1lIjoi5Lmd6L2s54aK6JuH5Li4In0seyJpZCI6MTcsIm5hbWUiOiLml6DluLjkuLkifSx7ImlkIjoxOCwibmFtZSI6IumVh+W/g+eQhuawlOS4uCJ9LHsiaWQiOjE5LCJuYW1lIjoi55Sf55Sf6YCg5YyW5Li5In0seyJpZCI6MjAsIm5hbWUiOiLlpKnnjovkv53lkb3kuLkifSx7ImlkIjoyMSwibmFtZSI6IuWunea1juS4uCJ9LHsiaWQiOjIyLCJuYW1lIjoi6buE6L+e6Kej5q+S5Li4In0seyJpZCI6MjMsIm5hbWUiOiLlpKnlv4Pop6Pmr5LkuLkifSx7ImlkIjoyNCwibmFtZSI6IuWbnumYs+S6lOm+meiGjyJ9LHsiaWQiOjI1LCJuYW1lIjoi54mb6buE6KGA56ut5Li5In0seyJpZCI6MjYsIm5hbWUiOiLlha3pmLPmraPmsJTkuLkifSx7ImlkIjoyNywibmFtZSI6IuacseaZtOWGsOifviJ9LHsiaWQiOjI4LCJuYW1lIjoi5LyP6IuT6aaW5LmM5Li4In0seyJpZCI6MjksIm5hbWUiOiLljYPlubTngbXoip0ifSx7ImlkIjozMCwibmFtZSI6Iuibh+iDhiJ9LHsiaWQiOjMxLCJuYW1lIjoi5LqU5a6d6Iqx6Jyc6YWSIn0seyJpZCI6MzIsIm5hbWUiOiLohYrlhavnsqUifSx7ImlkIjozMywibmFtZSI6IuWkp+ifoOahgyJ9LHsiaWQiOjM0LCJuYW1lIjoi5Y2D5bm05Lq65Y+CIn0seyJpZCI6MzUsIm5hbWUiOiLlpKnlsbHpm6rojrIifSx7ImlkIjozNiwibmFtZSI6IumAmueKgOWcsOm+meS4uCJ9LHsiaWQiOjM3LCJuYW1lIjoi5Y2D5bm05Yaw6JqVIn0seyJpZCI6MzgsIm5hbWUiOiLojr3nia/mnLHom6QifSx7ImlkIjozOSwibmFtZSI6Iue0q+mcnuenmOexjSJ9LHsiaWQiOjQwLCJuYW1lIjoi5bCP5peg55u45YqfIn0seyJpZCI6NDEsIm5hbWUiOiLljYHlhavms6XlgbYifSx7ImlkIjo0MiwibmFtZSI6IuelnueFp+e7jyJ9LHsiaWQiOjQzLCJuYW1lIjoi5piT562L57uPIn0seyJpZCI6NDQsIm5hbWUiOiLmtJfpq5Pnu48ifSx7ImlkIjo0NSwibmFtZSI6Iuair+S6kee6teW/g+azlSJ9LHsiaWQiOjQ2LCJuYW1lIjoi56We6KGM55m+5Y+YIn0seyJpZCI6NDcsIm5hbWUiOiLlh4zms6Llvq7mraUifSx7ImlkIjo0OCwibmFtZSI6IuWtkOWNiOmSiOeBuOe7jyJ9LHsiaWQiOjQ5LCJuYW1lIjoi5Y2O6ZmA5YaF5pit5Zu+In0seyJpZCI6NTAsIm5hbWUiOiLog6HpnZLniZvljLvkuaYifSx7ImlkIjo1MSwibmFtZSI6IuS6lOavkuenmOS8oCJ9LHsiaWQiOjUyLCJuYW1lIjoi5q+S57uPIn0seyJpZCI6NTMsIm5hbWUiOiLoja/njovnpZ7nr4cifSx7ImlkIjo1NCwibmFtZSI6IumTgeaOjOaLs+iwsSJ9LHsiaWQiOjU1LCJuYW1lIjoi5LiD5Lyk5ouz6LCxIn0seyJpZCI6NTYsIm5hbWUiOiLlpKnlsbHlha3pmLPmjowifSx7ImlkIjo1NywibmFtZSI6IueOhOWGpeelnuaOjCJ9LHsiaWQiOjU4LCJuYW1lIjoi5aSq5p6B5ouz57uPIn0seyJpZCI6NTksIm5hbWUiOiLpvpnosaHoiKzoi6Xlip8ifSx7ImlkIjo2MCwibmFtZSI6IuWkqueOhOe7jyJ9LHsiaWQiOjYxLCJuYW1lIjoi6buv54S26ZSA6a2C5o6MIn0seyJpZCI6NjIsIm5hbWUiOiLpmY3pvpnljYHlhavmjowifSx7ImlkIjo2MywibmFtZSI6IuWMl+WGpeelnuWKnyJ9LHsiaWQiOjY0LCJuYW1lIjoi5ZC45pif5aSn5rOVIn0seyJpZCI6NjUsIm5hbWUiOiLnpZ7mnKjnjovpvI4ifSx7ImlkIjo2NiwibmFtZSI6IuWFreiEieelnuWJkeiwsSJ9LHsiaWQiOjY3LCJuYW1lIjoi5p2+6aOO5YmR6LCxIn0seyJpZCI6NjgsIm5hbWUiOiLms7DlsbHljYHlhavnm5gifSx7ImlkIjo2OSwibmFtZSI6IuWbnuWzsOiQvembgeWJkeazlSJ9LHsiaWQiOjcwLCJuYW1lIjoi5LiD5pif5YmR6LCxIn0seyJpZCI6NzEsIm5hbWUiOiLkuKTku6rliZHms5UifSx7ImlkIjo3MiwibmFtZSI6IumHkeibh+enmOexjSJ9LHsiaWQiOjczLCJuYW1lIjoi546J5aWz57Sg5b+D5YmR5rOVIn0seyJpZCI6NzQsIm5hbWUiOiLoi5flrrbliZHms5UifSx7ImlkIjo3NSwibmFtZSI6IuWkquaegeWJkeazlSJ9LHsiaWQiOjc2LCJuYW1lIjoi6L6+5pGp5YmR6LCxIn0seyJpZCI6NzcsIm5hbWUiOiLnjoTpk4HliZHms5UifSx7ImlkIjo3OCwibmFtZSI6Iui+n+mCquWJkeiwsSJ9LHsiaWQiOjc5LCJuYW1lIjoi54us5a2k5Lmd5YmRIn0seyJpZCI6ODAsIm5hbWUiOiLooYDliIDnu48ifSx7ImlkIjo4MSwibmFtZSI6IueBq+eEsOWIgOazlSJ9LHsiaWQiOjgyLCJuYW1lIjoi5Y+N5Lik5Luq5YiA5rOVIn0seyJpZCI6ODMsIm5hbWUiOiLni4Lpo47liIDms5UifSx7ImlkIjo4NCwibmFtZSI6IuiDoeWutuWIgOazlSJ9LHsiaWQiOjg1LCJuYW1lIjoi6Zy56Zuz5YiA5rOVIn0seyJpZCI6ODYsIm5hbWUiOiLmr5Lpvpnpnq3ms5UifSx7ImlkIjo4NywibmFtZSI6Ium7hOaymeS4h+mHjOmereazlSJ9LHsiaWQiOjg4LCJuYW1lIjoi5ruh5aSp6Iqx6ZuoIn0seyJpZCI6ODksIm5hbWUiOiLpnLnpm7Pnp5jnsY0ifSx7ImlkIjo5MCwibmFtZSI6IuWQq+aymeWwhOW9sSJ9LHsiaWQiOjkxLCJuYW1lIjoi5bem5Y+z5LqS5pCP5LmL5pyvIn0seyJpZCI6OTIsIm5hbWUiOiLkub7lnaTlpKfmjKrnp7sifSx7ImlkIjo5MywibmFtZSI6IuiRteiKseWuneWFuCJ9LHsiaWQiOjk0LCJuYW1lIjoi5Lmd6Zi055yf57uPIn0seyJpZCI6OTUsIm5hbWUiOiLkuZ3pmLPnnJ/nu48ifSx7ImlkIjo5NiwibmFtZSI6Iumjnuidl+efsyJ9LHsiaWQiOjk3LCJuYW1lIjoi6YeR6ZKx6ZWWIn0seyJpZCI6OTgsIm5hbWUiOiLpo57liIAifSx7ImlkIjo5OSwibmFtZSI6IuiPqeaPkOWtkCJ9LHsiaWQiOjEwMCwibmFtZSI6IumHkeibh+mUpSJ9LHsiaWQiOjEwMSwibmFtZSI6Iumcuembs+W8uSJ9LHsiaWQiOjEwMiwibmFtZSI6IuavkuiSuum7jiJ9LHsiaWQiOjEwMywibmFtZSI6IueOieicgumSiCJ9LHsiaWQiOjEwNCwibmFtZSI6IuWGsOmthOmTtumSiCJ9LHsiaWQiOjEwNSwibmFtZSI6Ium7keihgOelnumSiCJ9LHsiaWQiOjEwNiwibmFtZSI6IueOhOmTgeWJkSJ9LHsiaWQiOjEwNywibmFtZSI6IuWQm+WtkOWJkSJ9LHsiaWQiOjEwOCwibmFtZSI6Iua3keWls+WJkSJ9LHsiaWQiOjEwOSwibmFtZSI6IuWAmuWkqeWJkSJ9LHsiaWQiOjExMCwibmFtZSI6IumHkeibh+WJkSJ9LHsiaWQiOjExMSwibmFtZSI6IuWHneeip+WJkSJ9LHsiaWQiOjExMiwibmFtZSI6IueZvem+meWJkSJ9LHsiaWQiOjExMywibmFtZSI6IueZveiZueWJkSJ9LHsiaWQiOjExNCwibmFtZSI6IuWRqOWFrOWJkSJ9LHsiaWQiOjExNSwibmFtZSI6IuihgOWIgCJ9LHsiaWQiOjExNiwibmFtZSI6IuWGt+aciOWuneWIgCJ9LHsiaWQiOjExNywibmFtZSI6IuWxoOm+meWIgCJ9LHsiaWQiOjExOCwibmFtZSI6Iue7v+azoummmemcsuWIgCJ9LHsiaWQiOjExOSwibmFtZSI6Iumcuembs+eLguWIgCJ9LHsiaWQiOjEyMCwibmFtZSI6Iui9r+eMrOeUsiJ9LHsiaWQiOjEyMSwibmFtZSI6IumHkeS4neiDjOW/gyJ9LHsiaWQiOjEyMiwibmFtZSI6IuS5jOialeihoyJ9LHsiaWQiOjEyMywibmFtZSI6IumzhOearuaKpOeUsiJ9LHsiaWQiOjEyNCwibmFtZSI6IueOieicgua1hiJ9LHsiaWQiOjEyNSwibmFtZSI6Ium7keacqOS7pOeJjCJ9LHsiaWQiOjEyNiwibmFtZSI6IuaiqOiKsemFkiJ9LHsiaWQiOjEyNywibmFtZSI6Iue/oee/oOadryJ9LHsiaWQiOjEyOCwibmFtZSI6IuS4g+WuneaMh+eOryJ9LHsiaWQiOjEyOSwibmFtZSI6IuelnuS7mee+juWls+WbviJ9LHsiaWQiOjEzMCwibmFtZSI6IuWkp+eHleS8oOWbveeOieeOuiJ9LHsiaWQiOjEzMSwibmFtZSI6IuWkp+eHleeah+W4neS4luezu+WbvuihqCJ9LHsiaWQiOjEzMiwibmFtZSI6Iui1j+WWhOe9muaBtuS7pCJ9LHsiaWQiOjEzMywibmFtZSI6IuS4pOmhteWIgOazlSJ9LHsiaWQiOjEzNCwibmFtZSI6IuaWreiCoOiNiSJ9LHsiaWQiOjEzNSwibmFtZSI6IumXr+eOi+WGm+WIgCJ9LHsiaWQiOjEzNiwibmFtZSI6IueOhOWGsOeip+eBq+mFkiJ9LHsiaWQiOjEzNywibmFtZSI6IuiLl+S6uuWHpOecvOavkuino+iNryJ9LHsiaWQiOjEzOCwibmFtZSI6Iue+iue+lOWdkOiHgCJ9LHsiaWQiOjEzOSwibmFtZSI6IuWwj+eJm+iFsOWtkCJ9LHsiaWQiOjE0MCwibmFtZSI6IuWwj+eMquiAs+actSJ9LHsiaWQiOjE0MSwibmFtZSI6IueNkOiFv+iCiSJ9LHsiaWQiOjE0MiwibmFtZSI6IuWFlOiCiSJ9LHsiaWQiOjE0MywibmFtZSI6IuelnuadliJ9LHsiaWQiOjE0NCwibmFtZSI6IumjnueLkOWkluS8oCJ9LHsiaWQiOjE0NSwibmFtZSI6IumbquWxsemjnueLkCJ9LHsiaWQiOjE0NiwibmFtZSI6Iui/nuWfjuivgCJ9LHsiaWQiOjE0NywibmFtZSI6IuWkqem+meWFq+mDqCJ9LHsiaWQiOjE0OCwibmFtZSI6IuWwhOmbleiLsembhOS8oCJ9LHsiaWQiOjE0OSwibmFtZSI6IueZvemprOWVuOilv+mjjiJ9LHsiaWQiOjE1MCwibmFtZSI6Ium5v+m8juiusCJ9LHsiaWQiOjE1MSwibmFtZSI6IueskeWCsuaxn+a5liJ9LHsiaWQiOjE1MiwibmFtZSI6IuS5puWJkeaBqeS7h+W9lSJ9LHsiaWQiOjE1MywibmFtZSI6IuelnumbleS+oOS+oyJ9LHsiaWQiOjE1NCwibmFtZSI6IuS+oOWuouihjCJ9LHsiaWQiOjE1NSwibmFtZSI6IuWAmuWkqeWxoOm+meiusCJ9LHsiaWQiOjE1NiwibmFtZSI6Iueip+ihgOWJkSJ9LHsiaWQiOjE1NywibmFtZSI6Ium4s+m4r+WIgCJ9LHsiaWQiOjE1OCwibmFtZSI6IuS4g+W/g+a1t+ajoCJ9LHsiaWQiOjE1OSwibmFtZSI6IuWPr+WFsOe7jyJ9LHsiaWQiOjE2MCwibmFtZSI6IuWUkOivl+mAiei+kSJ9LHsiaWQiOjE2MSwibmFtZSI6Iue6oumSpeWMmSJ9LHsiaWQiOjE2MiwibmFtZSI6IuapmemSpeWMmSJ9LHsiaWQiOjE2MywibmFtZSI6Ium7hOmSpeWMmSJ9LHsiaWQiOjE2NCwibmFtZSI6Iue7v+mSpeWMmSJ9LHsiaWQiOjE2NSwibmFtZSI6IuiTnemSpeWMmSJ9LHsiaWQiOjE2NiwibmFtZSI6Iue0q+mSpeWMmSJ9LHsiaWQiOjE2NywibmFtZSI6IumTgemSpeWMmSJ9LHsiaWQiOjE2OCwibmFtZSI6IumTnOmSpeWMmSJ9LHsiaWQiOjE2OSwibmFtZSI6IumTtumSpeWMmSJ9LHsiaWQiOjE3MCwibmFtZSI6IumHkemSpeWMmSJ9LHsiaWQiOjE3MSwibmFtZSI6IuiNr+adkCJ9LHsiaWQiOjE3MiwibmFtZSI6IuehneefsyJ9LHsiaWQiOjE3MywibmFtZSI6IuS4gOacteiTneiKsSJ9LHsiaWQiOjE3NCwibmFtZSI6IumTtuS4pCJ9LHsiaWQiOjE3NSwibmFtZSI6IumXr+eOi+iXj+WuneWbviJ9LHsiaWQiOjE3NiwibmFtZSI6IueOieesm+iwgeWutuWQrOiQveaihSJ9LHsiaWQiOjE3NywibmFtZSI6IuW5v+mZteaVo+eQtOabsiJ9LHsiaWQiOjE3OCwibmFtZSI6IuWImOS7sueUq+WRleihgOaji+iwsSJ9LHsiaWQiOjE3OSwibmFtZSI6IuW8oOaXreeOh+aEj+W4liJ9LHsiaWQiOjE4MCwibmFtZSI6Iua6quWxseihjOaXheWbviJ9LHsiaWQiOjE4MSwibmFtZSI6IuS4gOaSrumHkeavmyJ9LHsiaWQiOjE4MiwibmFtZSI6Iue9l+ebmCJ9LHsiaWQiOjE4MywibmFtZSI6IuW4puWktOWkp+WTpeS5puS/oSJ9LHsiaWQiOjE4NCwibmFtZSI6IuaJi+W4lSJ9LHsiaWQiOjE4NSwibmFtZSI6Iuael+mch+WNl+mBl+iogCJ9LHsiaWQiOjE4NiwibmFtZSI6IuaZuuaFp+aenCJ9LHsiaWQiOjE4NywibmFtZSI6Ium4s+WIgCJ9LHsiaWQiOjE4OCwibmFtZSI6Ium4r+WIgCJ9LHsiaWQiOjE4OSwibmFtZSI6Iuatpuael+W4liJ9LHsiaWQiOjE5MCwibmFtZSI6IuaYjuaVmemTgeeEsOS7pCJ9LHsiaWQiOjE5MSwibmFtZSI6IuS4gOmil+WktOmihSJ9LHsiaWQiOjE5MiwibmFtZSI6Iuecn+atpuWJkSJ9LHsiaWQiOjE5MywibmFtZSI6IumHkeebhua0l+aJi+ivt+W4liJ9LHsiaWQiOjE5NCwibmFtZSI6IueDp+WIgOWtkCJ9LHsiaWQiOjE5NSwibmFtZSI6IumTgemTsiJ9LHsiaWQiOjE5NiwibmFtZSI6Iuann+amlCJ9LHsiaWQiOjE5NywibmFtZSI6IuearuihoyJ9LHsiaWQiOjE5OCwibmFtZSI6IuaXoOeUqCJ9LHsiaWQiOjE5OSwibmFtZSI6IuacgOWQjiJ9XSwibW9uZXlJZCI6MTc0LCJub3RlIjoiSllYMiBNT0QgZnJvbSBqeW5ldyBtYWluIn0=";
+  function b64ToUtf8(b64) {
+    var bin = atob(b64);
+    var u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return new TextDecoder("utf-8").decode(u8);
+  }
+  const DATA = JSON.parse(b64ToUtf8(B64));
+  const moneyId = DATA.moneyId;
+
+  const $ = (id) => document.getElementById(id);
+  const people = DATA.people;
+  const skills = DATA.skills;
+  const items = DATA.items;
+
+  function labelRow(row) {
+    return String(row.id) + ' — ' + row.name;
+  }
+
+  function filterRows(data, q, max) {
+    max = max || 200;
+    var t = (q || '').trim();
+    if (!t) return data.slice(0, max);
+    var parts = t.split(/[\s\u3000,，\u2014\u2013\-/／|·]+/).filter(Boolean);
+    return data.filter(function (row) {
+      var h = (String(row.id) + ' ' + row.name);
+      for (var i = 0; i < parts.length; i++) {
+        if (h.indexOf(parts[i]) === -1) return false;
+      }
+      return true;
+    }).slice(0, max);
+  }
+
+  function findById(data, id) {
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i].id) === String(id)) return data[i];
+    }
+    return null;
+  }
+
+  function attachCombo(opts) {
+    var data = opts.data;
+    var inp = $(opts.queryId);
+    var panel = $(opts.panelId);
+    var idInput = $(opts.idInput);
+    if (!inp || !panel || !idInput) return;
+
+    function syncDisplayFromId() {
+      var id = idInput.value;
+      var r = findById(data, id);
+      inp.value = r ? labelRow(r) : String(id);
+    }
+
+    function openPanel() {
+      var rows = filterRows(data, inp.value);
+      panel.innerHTML = '';
+      if (rows.length === 0) {
+        var empty = document.createElement('li');
+        empty.className = 'active';
+        empty.style.cssText = 'color:var(--text-muted);cursor:default;';
+        empty.textContent = '无匹配，请减少关键词';
+        empty.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        panel.appendChild(empty);
+        panel.hidden = false;
+        return;
+      }
+      rows.forEach(function (row) {
+        var li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        li.textContent = labelRow(row);
+        li.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          idInput.value = String(row.id);
+          inp.value = labelRow(row);
+          panel.innerHTML = '';
+          panel.hidden = true;
+        });
+        panel.appendChild(li);
+      });
+      panel.hidden = false;
+    }
+
+    inp.addEventListener('focus', function () { openPanel(); });
+    inp.addEventListener('input', function () { openPanel(); });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        panel.innerHTML = '';
+        panel.hidden = true;
+        syncDisplayFromId();
+      }
+    });
+    inp.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!document.activeElement || (document.activeElement !== inp && !panel.contains(document.activeElement))) {
+          panel.hidden = true;
+        }
+        syncDisplayFromId();
+      }, 150);
+    });
+
+    idInput.addEventListener('input', function () { syncDisplayFromId(); });
+    idInput.addEventListener('change', function () { syncDisplayFromId(); });
+  }
+
+  attachCombo({ data: people, queryId: 'qPeople', panelId: 'panelPeople', idInput: 'roleId' });
+  attachCombo({ data: skills, queryId: 'qSkill', panelId: 'panelSkill', idInput: 'wugongId' });
+  attachCombo({ data: items, queryId: 'qItem', panelId: 'panelItem', idInput: 'itemId' });
+
+  $('moneyHint').textContent = String(moneyId);
+
+  function rid() { return String(parseInt($('roleId').value, 10) || 0); }
+
+  function wugongLevelToStore(lv) {
+    const n = Math.max(1, Math.min(10, parseInt(lv, 10) || 1));
+    return (n - 1) * 100;
+  }
+
+  function getSelectedCmdTypes() {
+    return Array.prototype.slice.call(document.querySelectorAll('.cmdType:checked')).map(function (el) {
+      return el.value;
+    });
+  }
+
+  function buildCommand(cmdType, r, iid, icnt, wid, sl, show) {
+    switch (cmdType) {
+      case 'money': {
+        var n = Math.max(0, parseInt($('vMoney').value, 10) || 0);
+        return n > 0 ? ('AddItem(' + moneyId + ', ' + n + ')') : '';
+      }
+      case 'exp': {
+        var n = parseInt($('vExp').value, 10) || 0;
+        return n !== 0 ? ('AddExp(' + r + ', ' + n + ')') : '';
+      }
+      case 'attack': {
+        var n = parseInt($('vAttack').value, 10) || 0;
+        return n !== 0 ? ('AddAttack(' + r + ', ' + n + ')') : '';
+      }
+      case 'speed': {
+        var n = parseInt($('vSpeed').value, 10) || 0;
+        return n !== 0 ? ('AddSpeed(' + r + ', ' + n + ')') : '';
+      }
+      case 'mp': {
+        var n = parseInt($('vMp').value, 10) || 0;
+        return n !== 0 ? ('AddMp(' + r + ', ' + n + ')') : '';
+      }
+      case 'hp': {
+        var n = parseInt($('vHp').value, 10) || 0;
+        return n !== 0 ? ('AddHp(' + r + ', ' + n + ')') : '';
+      }
+      case 'apt': {
+        var n = parseInt($('vApt').value, 10) || 0;
+        return n !== 0 ? ('AddAptitude(' + r + ', ' + n + ')') : '';
+      }
+      case 'eth': {
+        var n = parseInt($('vEth').value, 10) || 0;
+        return n !== 0 ? ('AddEthics(' + n + ')') : '';
+      }
+      case 'rep': {
+        var n = parseInt($('vRep').value, 10) || 0;
+        return n !== 0 ? ('AddRepute(' + n + ')') : '';
+      }
+      case 'item':
+        return icnt !== 0 ? ('AddItem(' + iid + ', ' + icnt + ')') : '';
+      case 'itemNH':
+        return icnt !== 0 ? ('AddItemWithoutHint(' + iid + ', ' + icnt + ')') : '';
+      case 'learn':
+        return 'LearnMagic2(' + r + ', ' + wid + ', ' + show + ')';
+      case 'setM':
+        return 'SetOneMagic(' + r + ', ' + sl + ', ' + wid + ', ' + wugongLevelToStore($('lv').value) + ')';
+      case 'setAtk':
+        return 'set_attack ' + (parseInt($('setAtk').value, 10) || 0);
+      case 'itemCmd':
+        return icnt !== 0 ? ('item ' + iid + ' ' + icnt) : '';
+      default:
+        return '';
+    }
+  }
+
+  function gen() {
+    var r = rid();
+    var iid = parseInt($('itemId').value, 10) || 0;
+    var icnt = parseInt($('itemCnt').value, 10) || 0;
+    var wid = parseInt($('wugongId').value, 10) || 0;
+    var sl = parseInt($('slot').value, 10) || 0;
+    var show = parseInt($('learnShow').value, 10) ? 1 : 0;
+    var selected = getSelectedCmdTypes();
+    var lines = [];
+
+    selected.forEach(function (t) {
+      var cmd = buildCommand(t, r, iid, icnt, wid, sl, show);
+      if (cmd) lines.push(cmd);
+    });
+
+    $('out').value = lines.length ? lines.join('
+') : '（无）请先勾选命令类型，且参数需有效（例如数量非 0）。';
+  }
+
+  $('btnGen').addEventListener('click', gen);
+  $('btnClear').addEventListener('click', () => { $('out').value = ''; });
+  $('btnCopy').addEventListener('click', async () => {
+    const t = $('out').value;
+    if (!t || t.startsWith('（无）')) return;
+    try {
+      await navigator.clipboard.writeText(t);
+      $('btnCopy').textContent = '已复制';
+      setTimeout(() => { $('btnCopy').textContent = '复制结果'; }, 1500);
+    } catch (e) {
+      $('out').select();
+      document.execCommand('copy');
+    }
+  });
+
+  $('itemId').value = '174';
+  $('wugongId').value = '1';
+  $('roleId').value = '0';
+  $('qPeople').value = labelRow(people[0]);
+  $('qSkill').value = labelRow(findById(skills, 1) || skills[0]);
+  $('qItem').value = labelRow(findById(items, 174) || items[0]);
+})();
+</script>
+</body>
+</html>
